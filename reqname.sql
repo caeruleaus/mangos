@@ -1,0 +1,1 @@
+ALTER TABLE item_template ADD RequiredName VARCHAR(255) AFTER RequiredLevel;

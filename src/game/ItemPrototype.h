@@ -529,6 +529,7 @@ struct ItemPrototype
     uint32 AllowableRace;
     uint32 ItemLevel;
     uint32 RequiredLevel;
+	char*  RequiredName;									//Won't let anyone but specified name equip/use
     uint32 RequiredSkill;                                   // id from SkillLine.dbc
     uint32 RequiredSkillRank;
     uint32 RequiredSpell;                                   // id from Spell.dbc
@@ -642,6 +643,7 @@ struct ItemLocale
 {
     std::vector<std::string> Name;
     std::vector<std::string> Description;
+	std::vector<std::string> RequiredName;
 };
 
 // GCC have alternative #pragma pack() syntax and old gcc version not support pack(pop), also any gcc version not support it at some platform

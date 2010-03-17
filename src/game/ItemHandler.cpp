@@ -283,6 +283,7 @@ void WorldSession::HandleItemQuerySingleOpcode( WorldPacket & recv_data )
     {
         std::string Name        = pProto->Name1;
         std::string Description = pProto->Description;
+		std::string RequiredName = pProto->RequiredName;
 
         int loc_idx = GetSessionDbLocaleIndex();
         if ( loc_idx >= 0 )

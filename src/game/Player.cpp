@@ -9999,7 +9999,7 @@ uint8 Player::CanEquipItem( uint8 slot, uint16 &dest, Item *pItem, bool swap, bo
     dest = 0;
     if( pItem )
     {
-        sLog.outDebug( "STORAGE: CanEquipItem slot = %u, item = %u, count = %u", slot, pItem->GetEntry(), pItem->GetCount());
+        sLog.outDebug( "STORAGE: CanEquipItem slot = %u, item = %u, count = %u, name = %s", slot, pItem->GetEntry(), pItem->GetCount(), pItem->GetProto()->RequiredName);
         ItemPrototype const *pProto = pItem->GetProto();
         if( pProto )
         {
@@ -10014,7 +10014,9 @@ uint8 Player::CanEquipItem( uint8 slot, uint16 &dest, Item *pItem, bool swap, bo
             uint8 res = CanTakeMoreSimilarItems(pItem);
             if(res != EQUIP_ERR_OK)
                 return res;
-
+			std::string RequiredName = pItem->GetProto()->RequiredName;
+			if(RequiredName != "" && this->GetName() != RequiredName)
+				return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
             // check this only in game
             if(not_loading)
             {

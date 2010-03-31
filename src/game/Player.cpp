@@ -1379,6 +1379,37 @@ void Player::Update( uint32 p_time )
     //because we don't want player's ghost teleported from graveyard
     if(IsHasDelayedTeleport() && isAlive())
         TeleportTo(m_teleport_dest, m_teleport_options);
+
+    bool DalaranRestrictedFlightArea = sWorld.getConfig(CONFIG_BOOL_DALARAN_RESTRICTED_FLIGHT_AREA);
+
+    if (DalaranRestrictedFlightArea)
+    {
+        if (GetMapId() == 571 && IsInWorld())
+        {
+            if (GetPositionZ() > 640.0 && GetPositionZ() < 700.0 && GetZoneId() == 4395 && GetAreaId() != 4564 && m_movementInfo.HasMovementFlag(MOVEFLAG_FLYING) && !HasAura(58600) && !HasAura(61243))
+            {
+                CastSpell(this, 58600, true);
+                PlayDirectSound(9417);
+                m_session->SendNotification("Warning: You've entered a no-fly zone and are about to be dismounted!");
+                ChatHandler(this).PSendSysMessage("Warning: You've entered a no-fly zone and are about to be dismounted!");
+            }
+            if (HasAura(61243)) // Restricted Flight Area - Parachute Visual
+            {
+                float x, y, z;
+                GetPosition(x, y, z);
+                float ground_Z = GetMap()->GetHeight(x, y, z, true);
+                if (fabs(ground_Z - z) < 0.1f)
+                {
+                    RemoveAurasDueToSpell(61243);
+                    return;
+                }
+            }
+            if (GetPositionZ() < 640.0 && GetZoneId() == 4395 && HasAura(58600) || GetPositionZ() > 700.0 && GetZoneId() == 4395 && HasAura(58600) || GetAreaId() == 4564 && HasAura(58600) || GetZoneId() != 4395 && HasAura(58600))
+            {
+            RemoveAurasDueToSpell(58600);
+            }
+        }
+    }
 }
 
 void Player::setDeathState(DeathState s)

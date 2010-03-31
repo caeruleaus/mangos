@@ -590,6 +590,8 @@ void World::LoadConfigSettings(bool reload)
 
     setConfig(CONFIG_BOOL_ALL_TAXI_PATHS, "AllFlightPaths", false);
 
+    setConfig(CONFIG_BOOL_DALARAN_RESTRICTED_FLIGHT_AREA, "DalaranRestrictedFlightArea", false);
+
     setConfig(CONFIG_BOOL_INSTANCE_IGNORE_LEVEL, "Instance.IgnoreLevel", false);
     setConfig(CONFIG_BOOL_INSTANCE_IGNORE_RAID,  "Instance.IgnoreRaid", false);
 

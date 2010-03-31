@@ -2509,11 +2509,13 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
             }
             case 58600:                                     // Restricted Flight Area
             {
-                // Remove Flight Auras
-                m_target->CastSpell(m_target, 58601, true);
-                // Parachute
-                m_target->CastSpell(m_target, 45472, true);
+                if (m_target->GetPositionZ() > 640.0 && m_target->GetPositionZ() < 700.0 && m_target->GetZoneId() == 4395 && m_target->GetAreaId() != 4564 /*&& m_target->m_movementInfo.HasMovementFlag(MOVEFLAG_FLYING)*/)
+				{
+                m_target->CastSpell(m_target, 58601, true);   // Remove Flight Auras
+                m_target->CastSpell(m_target, 45472, true);   // Parachute Buff
+                m_target->CastSpell(m_target, 61243, true);   // Parachute Visual
                 return;
+				}
             }
         }
 

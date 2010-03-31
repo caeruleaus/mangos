@@ -50,6 +50,7 @@
 #include "MovementGenerator.h"
 
 #include <math.h>
+#include <stdarg.h>
 
 float baseMoveSpeed[MAX_MOVE_TYPE] =
 {
@@ -268,9 +269,9 @@ Unit::~Unit()
         delete m_charmInfo;
 
     // those should be already removed at "RemoveFromWorld()" call
-    assert(m_gameObj.size() == 0);
-    assert(m_dynObjGUIDs.size() == 0);
-    assert(m_deletedAuras.size() == 0);
+    ASSERT(m_gameObj.size() == 0);
+    ASSERT(m_dynObjGUIDs.size() == 0);
+    ASSERT(m_deletedAuras.size() == 0);
 }
 
 void Unit::Update( uint32 p_time )
@@ -343,8 +344,12 @@ bool Unit::haveOffhandWeapon() const
         return false;
 }
 
-void Unit::SendMonsterMove(float NewPosX, float NewPosY, float NewPosZ, SplineType type, SplineFlags flags, uint32 Time, Player* player)
+void Unit::SendMonsterMove(float NewPosX, float NewPosY, float NewPosZ, SplineType type, SplineFlags flags, uint32 Time, Player* player, ...)
 {
+
+    va_list vargs;
+    va_start(vargs,player);
+
     float moveTime = (float)Time;
 
     WorldPacket data( SMSG_MONSTER_MOVE, (41 + GetPackGUID().size()) );
@@ -359,18 +364,21 @@ void Unit::SendMonsterMove(float NewPosX, float NewPosY, float NewPosZ, SplineTy
         case SPLINETYPE_NORMAL:                             // normal packet
             break;
         case SPLINETYPE_STOP:                               // stop packet (raw pos?)
+            va_end(vargs);
             SendMessageToSet( &data, true );
             return;
         case SPLINETYPE_FACINGSPOT:                         // facing spot, not used currently
-            data << float(0);
-            data << float(0);
-            data << float(0);
+        {
+            data << float(va_arg(vargs,double));
+            data << float(va_arg(vargs,double));
+            data << float(va_arg(vargs,double));
             break;
+        }
         case SPLINETYPE_FACINGTARGET:
-            data << uint64(m_InteractionObject);            // set in SetFacingToObject()
+            data << uint64(va_arg(vargs,uint64));
             break;
         case SPLINETYPE_FACINGANGLE:                        // not used currently
-            data << float(0);                               // facing angle
+            data << float(va_arg(vargs,double));            // facing angle
             break;
     }
 
@@ -383,6 +391,8 @@ void Unit::SendMonsterMove(float NewPosX, float NewPosY, float NewPosZ, SplineTy
     data << uint32(moveTime);                               // Time in between points
     data << uint32(1);                                      // 1 single waypoint
     data << NewPosX << NewPosY << NewPosZ;                  // the single waypoint Point B
+
+    va_end(vargs);
 
     if(player)
         player->GetSession()->SendPacket(&data);
@@ -456,7 +466,7 @@ void Unit::resetAttackTimer(WeaponAttackType type)
 
 bool Unit::canReachWithAttack(Unit *pVictim) const
 {
-    assert(pVictim);
+    ASSERT(pVictim);
     float reach = GetFloatValue(UNIT_FIELD_COMBATREACH);
     if( reach <= 0.0f )
         reach = 1.0f;
@@ -584,7 +594,7 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
         // some critters required for quests (need normal entry instead possible heroic in any cases)
         if(GetTypeId() == TYPEID_PLAYER)
             if(CreatureInfo const* normalInfo = ObjectMgr::GetCreatureTemplate(pVictim->GetEntry()))
-                ((Player*)this)->KilledMonster(normalInfo,pVictim->GetGUID());
+                ((Player*)this)->KilledMonster(normalInfo,pVictim->GetObjectGuid());
 
         return damage;
     }
@@ -810,8 +820,8 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
             if (cVictim->isTemporarySummon())
             {
                 TemporarySummon* pSummon = (TemporarySummon*)cVictim;
-                if (IS_CREATURE_GUID(pSummon->GetSummonerGUID()))
-                    if(Creature* pSummoner = cVictim->GetMap()->GetCreature(pSummon->GetSummonerGUID()))
+                if (pSummon->GetSummonerGuid().IsCreature())
+                    if(Creature* pSummoner = cVictim->GetMap()->GetCreature(pSummon->GetSummonerGuid()))
                         if (pSummoner->AI())
                             pSummoner->AI()->SummonedCreatureJustDied(cVictim);
             }
@@ -850,10 +860,10 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
         // last damage from non duel opponent or opponent controlled creature
         if(duel_hasEnded)
         {
-            assert(pVictim->GetTypeId()==TYPEID_PLAYER);
+            ASSERT(pVictim->GetTypeId()==TYPEID_PLAYER);
             Player *he = (Player*)pVictim;
 
-            assert(he->duel);
+            ASSERT(he->duel);
 
             he->duel->opponent->CombatStopWithPets(true);
             he->CombatStopWithPets(true);
@@ -1027,10 +1037,10 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
         // last damage from duel opponent
         if(duel_hasEnded)
         {
-            assert(pVictim->GetTypeId()==TYPEID_PLAYER);
+            ASSERT(pVictim->GetTypeId()==TYPEID_PLAYER);
             Player *he = (Player*)pVictim;
 
-            assert(he->duel);
+            ASSERT(he->duel);
 
             he->SetHealth(1);
 
@@ -1054,34 +1064,34 @@ void Unit::CastStop(uint32 except_spellid)
             InterruptSpell(CurrentSpellTypes(i),false);
 }
 
-void Unit::CastSpell(Unit* Victim, uint32 spellId, bool triggered, Item *castItem, Aura* triggeredByAura, uint64 originalCaster)
+void Unit::CastSpell(Unit* Victim, uint32 spellId, bool triggered, Item *castItem, Aura* triggeredByAura, ObjectGuid originalCaster)
 {
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId );
+    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
 
     if(!spellInfo)
     {
-        sLog.outError("CastSpell: unknown spell id %i by caster: %s %u)", spellId,(GetTypeId()==TYPEID_PLAYER ? "player (GUID:" : "creature (Entry:"),(GetTypeId()==TYPEID_PLAYER ? GetGUIDLow() : GetEntry()));
+        sLog.outError("CastSpell: unknown spell id %i by caster: %s", spellId, GetObjectGuid().GetString().c_str());
         return;
     }
 
-    CastSpell(Victim,spellInfo,triggered,castItem,triggeredByAura, originalCaster);
+    CastSpell(Victim, spellInfo, triggered, castItem, triggeredByAura, originalCaster);
 }
 
-void Unit::CastSpell(Unit* Victim,SpellEntry const *spellInfo, bool triggered, Item *castItem, Aura* triggeredByAura, uint64 originalCaster)
+void Unit::CastSpell(Unit* Victim,SpellEntry const *spellInfo, bool triggered, Item *castItem, Aura* triggeredByAura, ObjectGuid originalCaster)
 {
     if(!spellInfo)
     {
-        sLog.outError("CastSpell: unknown spell by caster: %s %u)", (GetTypeId()==TYPEID_PLAYER ? "player (GUID:" : "creature (Entry:"),(GetTypeId()==TYPEID_PLAYER ? GetGUIDLow() : GetEntry()));
+        sLog.outError("CastSpell: unknown spell by caster: %s", GetObjectGuid().GetString().c_str());
         return;
     }
 
     if (castItem)
         DEBUG_LOG("WORLD: cast Item spellId - %i", spellInfo->Id);
 
-    if(!originalCaster && triggeredByAura)
+    if(originalCaster.IsEmpty() && triggeredByAura)
         originalCaster = triggeredByAura->GetCasterGUID();
 
-    Spell *spell = new Spell(this, spellInfo, triggered, originalCaster );
+    Spell *spell = new Spell(this, spellInfo, triggered, originalCaster);
 
     SpellCastTargets targets;
     targets.setUnitTarget( Victim );
@@ -1089,31 +1099,31 @@ void Unit::CastSpell(Unit* Victim,SpellEntry const *spellInfo, bool triggered, I
     spell->prepare(&targets, triggeredByAura);
 }
 
-void Unit::CastCustomSpell(Unit* Victim,uint32 spellId, int32 const* bp0, int32 const* bp1, int32 const* bp2, bool triggered, Item *castItem, Aura* triggeredByAura, uint64 originalCaster)
+void Unit::CastCustomSpell(Unit* Victim,uint32 spellId, int32 const* bp0, int32 const* bp1, int32 const* bp2, bool triggered, Item *castItem, Aura* triggeredByAura, ObjectGuid originalCaster)
 {
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId );
+    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
 
     if(!spellInfo)
     {
-        sLog.outError("CastCustomSpell: unknown spell id %i", spellId);
+        sLog.outError("CastCustomSpell: unknown spell id %i by caster: %s", spellId, GetObjectGuid().GetString().c_str());
         return;
     }
 
-    CastCustomSpell(Victim,spellInfo,bp0,bp1,bp2,triggered,castItem,triggeredByAura, originalCaster);
+    CastCustomSpell(Victim, spellInfo, bp0, bp1, bp2, triggered, castItem, triggeredByAura, originalCaster);
 }
 
-void Unit::CastCustomSpell(Unit* Victim,SpellEntry const *spellInfo, int32 const* bp0, int32 const* bp1, int32 const* bp2, bool triggered, Item *castItem, Aura* triggeredByAura, uint64 originalCaster)
+void Unit::CastCustomSpell(Unit* Victim, SpellEntry const *spellInfo, int32 const* bp0, int32 const* bp1, int32 const* bp2, bool triggered, Item *castItem, Aura* triggeredByAura, ObjectGuid originalCaster)
 {
     if(!spellInfo)
     {
-        sLog.outError("CastCustomSpell: unknown spell");
+        sLog.outError("CastCustomSpell: unknown spell by caster: %s", GetObjectGuid().GetString().c_str());
         return;
     }
 
     if (castItem)
         DEBUG_LOG("WORLD: cast Item spellId - %i", spellInfo->Id);
 
-    if(!originalCaster && triggeredByAura)
+    if(originalCaster.IsEmpty() && triggeredByAura)
         originalCaster = triggeredByAura->GetCasterGUID();
 
     Spell *spell = new Spell(this, spellInfo, triggered, originalCaster);
@@ -1134,35 +1144,35 @@ void Unit::CastCustomSpell(Unit* Victim,SpellEntry const *spellInfo, int32 const
 }
 
 // used for scripting
-void Unit::CastSpell(float x, float y, float z, uint32 spellId, bool triggered, Item *castItem, Aura* triggeredByAura, uint64 originalCaster)
+void Unit::CastSpell(float x, float y, float z, uint32 spellId, bool triggered, Item *castItem, Aura* triggeredByAura, ObjectGuid originalCaster)
 {
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId );
+    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
 
     if(!spellInfo)
     {
-        sLog.outError("CastSpell(x,y,z): unknown spell id %i by caster: %s %u)", spellId,(GetTypeId()==TYPEID_PLAYER ? "player (GUID:" : "creature (Entry:"),(GetTypeId()==TYPEID_PLAYER ? GetGUIDLow() : GetEntry()));
+        sLog.outError("CastSpell(x,y,z): unknown spell id %i by caster: %s", spellId, GetObjectGuid().GetString().c_str());
         return;
     }
 
-    CastSpell(x, y, z,spellInfo,triggered,castItem,triggeredByAura, originalCaster);
+    CastSpell(x, y, z, spellInfo, triggered, castItem, triggeredByAura, originalCaster);
 }
 
 // used for scripting
-void Unit::CastSpell(float x, float y, float z, SpellEntry const *spellInfo, bool triggered, Item *castItem, Aura* triggeredByAura, uint64 originalCaster)
+void Unit::CastSpell(float x, float y, float z, SpellEntry const *spellInfo, bool triggered, Item *castItem, Aura* triggeredByAura, ObjectGuid originalCaster)
 {
     if(!spellInfo)
     {
-        sLog.outError("CastSpell(x,y,z): unknown spell by caster: %s %u)", (GetTypeId()==TYPEID_PLAYER ? "player (GUID:" : "creature (Entry:"),(GetTypeId()==TYPEID_PLAYER ? GetGUIDLow() : GetEntry()));
+        sLog.outError("CastSpell(x,y,z): unknown spell by caster: %s", GetObjectGuid().GetString().c_str());
         return;
     }
 
     if (castItem)
         DEBUG_LOG("WORLD: cast Item spellId - %i", spellInfo->Id);
 
-    if(!originalCaster && triggeredByAura)
+    if(originalCaster.IsEmpty() && triggeredByAura)
         originalCaster = triggeredByAura->GetCasterGUID();
 
-    Spell *spell = new Spell(this, spellInfo, triggered, originalCaster );
+    Spell *spell = new Spell(this, spellInfo, triggered, originalCaster);
 
     SpellCastTargets targets;
     targets.setDestination(x, y, z);
@@ -1732,6 +1742,24 @@ void Unit::HandleEmoteCommand(uint32 anim_id)
     data << uint32(anim_id);
     data << uint64(GetGUID());
     SendMessageToSet(&data, true);
+}
+
+void Unit::HandleEmoteState(uint32 anim_id)
+{
+    SetUInt32Value(UNIT_NPC_EMOTESTATE, anim_id);
+}
+
+void Unit::HandleEmote(uint32 anim_id)
+{
+    if (!anim_id)
+        HandleEmoteState(0);
+    else if (EmotesEntry const* emoteEntry = sEmotesStore.LookupEntry(anim_id))
+    {
+        if (emoteEntry->EmoteType)                          // 1,2 states, 0 command
+            HandleEmoteState(anim_id);
+        else
+            HandleEmoteCommand(anim_id);
+    }
 }
 
 uint32 Unit::CalcNotIgnoreAbsorbDamage( uint32 damage, SpellSchoolMask damageSchoolMask, SpellEntry const* spellInfo /*= NULL*/)
@@ -3336,7 +3364,7 @@ void Unit::_UpdateAutoRepeatSpell()
 
 void Unit::SetCurrentCastedSpell( Spell * pSpell )
 {
-    assert(pSpell);                                         // NULL may be never passed here, use InterruptSpell or InterruptNonMeleeSpells
+    ASSERT(pSpell);                                         // NULL may be never passed here, use InterruptSpell or InterruptNonMeleeSpells
 
     CurrentSpellTypes CSpellType = pSpell->GetCurrentContainer();
 
@@ -3407,7 +3435,7 @@ void Unit::SetCurrentCastedSpell( Spell * pSpell )
 
 void Unit::InterruptSpell(CurrentSpellTypes spellType, bool withDelayed, bool sendAutoRepeatCancelToClient)
 {
-    assert(spellType < CURRENT_MAX_SPELL);
+    ASSERT(spellType < CURRENT_MAX_SPELL);
 
     if (m_currentSpells[spellType] && (withDelayed || m_currentSpells[spellType]->getState() != SPELL_STATE_DELAYED) )
     {
@@ -3515,12 +3543,10 @@ void Unit::SetFacingToObject(WorldObject* pObject)
     if (!IsStopped())
         return;
 
-    m_InteractionObject = pObject->GetGUID();
-
     // TODO: figure out under what conditions creature will move towards object instead of facing it where it currently is.
 
     SetOrientation(GetAngle(pObject));
-    SendMonsterMove(GetPositionX(), GetPositionY(), GetPositionZ(), SPLINETYPE_FACINGTARGET, ((Creature*)this)->GetSplineFlags(), 0);
+    SendMonsterMove(GetPositionX(), GetPositionY(), GetPositionZ(), SPLINETYPE_FACINGTARGET, ((Creature*)this)->GetSplineFlags(), 0, NULL, pObject->GetGUID());
 }
 
 bool Unit::isInAccessablePlaceFor(Creature const* c) const
@@ -4221,7 +4247,7 @@ void Unit::RemoveAurasDueToSpellBySteal(uint32 spellId, uint64 casterGUID, Unit 
             // set its duration and maximum duration
             // max duration 2 minutes (in msecs)
             int32 dur = aur->GetAuraDuration();
-            int32 max_dur = 2*MINUTE*IN_MILISECONDS;
+            int32 max_dur = 2*MINUTE*IN_MILLISECONDS;
             int32 new_max_dur = max_dur > dur ? dur : max_dur;
             new_aur->SetAuraMaxDuration( new_max_dur );
             new_aur->SetAuraDuration( new_max_dur );
@@ -4660,7 +4686,7 @@ GameObject* Unit::GetGameObject(uint32 spellId) const
 
 void Unit::AddGameObject(GameObject* gameObj)
 {
-    assert(gameObj && gameObj->GetOwnerGUID()==0);
+    ASSERT(gameObj && gameObj->GetOwnerGUID()==0);
     m_gameObj.push_back(gameObj);
     gameObj->SetOwnerGUID(GetGUID());
 
@@ -4676,7 +4702,7 @@ void Unit::AddGameObject(GameObject* gameObj)
 
 void Unit::RemoveGameObject(GameObject* gameObj, bool del)
 {
-    assert(gameObj && gameObj->GetOwnerGUID()==GetGUID());
+    ASSERT(gameObj && gameObj->GetOwnerGUID()==GetGUID());
 
     gameObj->SetOwnerGUID(0);
 
@@ -11083,7 +11109,7 @@ void Unit::DeleteThreatList()
 
 void Unit::TauntApply(Unit* taunter)
 {
-    assert(GetTypeId()== TYPEID_UNIT);
+    ASSERT(GetTypeId()== TYPEID_UNIT);
 
     if(!taunter || (taunter->GetTypeId() == TYPEID_PLAYER && ((Player*)taunter)->isGameMaster()))
         return;
@@ -11106,7 +11132,7 @@ void Unit::TauntApply(Unit* taunter)
 
 void Unit::TauntFadeOut(Unit *taunter)
 {
-    assert(GetTypeId()== TYPEID_UNIT);
+    ASSERT(GetTypeId()== TYPEID_UNIT);
 
     if(!taunter || (taunter->GetTypeId() == TYPEID_PLAYER && ((Player*)taunter)->isGameMaster()))
         return;
@@ -11144,7 +11170,7 @@ bool Unit::SelectHostileTarget()
     //next-victim-selection algorithm and evade mode are called
     //threat list sorting etc.
 
-    assert(GetTypeId()== TYPEID_UNIT);
+    ASSERT(GetTypeId()== TYPEID_UNIT);
 
     if (!this->isAlive())
         return false;
@@ -11187,11 +11213,13 @@ bool Unit::SelectHostileTarget()
         // No taunt aura or taunt aura caster is dead standart target selection
         target = m_ThreatManager.getHostileTarget();
 
-    if(target)
+    if (target)
     {
-        if(!hasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_DIED))
+        if (!hasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_DIED))
+        {
             SetInFront(target);
-        ((Creature*)this)->AI()->AttackStart(target);
+            ((Creature*)this)->AI()->AttackStart(target);
+        }
         return true;
     }
 

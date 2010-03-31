@@ -1,6 +1,7 @@
 #include "AuctionHouseBot.h"
 #include "ObjectMgr.h"
 #include "AuctionHouseMgr.h"
+#include "SqlOperations.h"
 
 #include "Policies/SingletonImp.h"
 
@@ -748,7 +749,7 @@ void AuctionHouseBot::Update()
 
     WorldSession _session(AHBplayerAccount, NULL, SEC_PLAYER, true, 0, LOCALE_enUS);
     Player _AHBplayer(&_session);
-    _AHBplayer.LoadFromDB(AHBplayerGUID, NULL);
+    _AHBplayer.LoadFromDB(AHBplayerGUID, SqlQueryHolder::SqlQueryHolder());
     ObjectAccessor::Instance().AddObject(&_AHBplayer);
 
     // Add New Bids

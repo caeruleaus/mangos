@@ -5261,7 +5261,7 @@ void Spell::EffectWeaponDmg(SpellEffectIndex eff_idx)
         case 66765: case 67333:                 // Meteor Fists
         {
             uint32 count = 0;
-            for(std::list<TargetInfo>::iterator ihit= m_UniqueTargetInfo.begin();ihit != m_UniqueTargetInfo.end();++ihit) 
+			for(tbb::concurrent_vector<TargetInfo>::iterator ihit= m_UniqueTargetInfo.begin();ihit != m_UniqueTargetInfo.end();++ihit) 
             ++count;
 
             m_damage /= count;                    // divide to all targets

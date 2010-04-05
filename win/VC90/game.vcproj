@@ -859,6 +859,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\game\MapUpdater.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\MapUpdater.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\game\MiscHandler.cpp"
 				>
 			</File>
@@ -1383,14 +1391,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\game\PlayerbotMgr.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\game\PlayerbotMgr.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\game\PlayerbotAI.cpp"
 				>
 			</File>
@@ -1436,6 +1436,14 @@
 			</File>
 			<File
 				RelativePath="..\..\src\game\PlayerbotMageAI.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\PlayerbotMgr.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\PlayerbotMgr.h"
 				>
 			</File>
 			<File

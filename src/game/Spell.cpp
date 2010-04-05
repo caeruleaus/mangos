@@ -3481,13 +3481,9 @@ void Spell::WriteSpellGoTargets( WorldPacket * data )
         }
     }
 
-<<<<<<< HEAD
-    for(std::list<GOTargetInfo>::const_iterator ighit = m_UniqueGOTargetInfo.begin(); ighit != m_UniqueGOTargetInfo.end(); ++ighit)
-        *data << ighit->targetGUID;                         // Always hits
-=======
+
     for(tbb::concurrent_vector<GOTargetInfo>::const_iterator ighit = m_UniqueGOTargetInfo.begin(); ighit != m_UniqueGOTargetInfo.end(); ++ighit)
-        *data << uint64(ighit->targetGUID);                 // Always hits
->>>>>>> 81becab49ce1b57538fbc5ad860a449f4be1f479
+        *data << ighit->targetGUID;                         // Always hits
 
     *data << (uint8)miss;
     for(tbb::concurrent_vector<TargetInfo>::const_iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
@@ -3660,14 +3656,10 @@ void Spell::SendChannelStart(uint32 duration)
     {
         for(tbb::concurrent_vector<TargetInfo>::const_iterator itr = m_UniqueTargetInfo.begin(); itr != m_UniqueTargetInfo.end(); ++itr)
         {
-<<<<<<< HEAD
-            if( (itr->effectMask & (1 << 0)) && itr->reflectResult == SPELL_MISS_NONE && itr->targetGUID != m_caster->GetObjectGuid())
-=======
 	     if (itr->deleted == true)
 		  continue;
 
             if( (itr->effectMask & (1 << 0)) && itr->reflectResult == SPELL_MISS_NONE && itr->targetGUID != m_caster->GetGUID())
->>>>>>> 81becab49ce1b57538fbc5ad860a449f4be1f479
             {
                 target = ObjectAccessor::GetUnit(*m_caster, itr->targetGUID);
                 break;

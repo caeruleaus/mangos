@@ -1386,6 +1386,9 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
         unMaxTargets += (*m)->GetModifier()->m_amount;
     }
 
+	if(m_spellInfo->Id == 71610 && unMaxTargets > 1)
+		unMaxTargets = 1;
+
     switch(targetMode)
     {
         case TARGET_RANDOM_NEARBY_LOC:

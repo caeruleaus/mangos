@@ -576,6 +576,24 @@ struct BattlemasterListEntry
     //uint32 HolidayWorldStateId;                           // 30 new 3.1
 };
 
+/*struct Cfg_CategoriesEntry
+{
+    uint32 Index;                                           // categoryId, sent in RealmList packet
+    uint32 Unk1;
+    uint32 Unk2;
+    uint32 IsTournamentRealm;
+    char *categoryName[16];
+    uint32 categoryNameFlags;
+}*/
+
+/*struct Cfg_ConfigsEntry
+{
+    uint32 Id;
+    uint32 Type;                                            // sent in RealmList packet
+    uint32 IsPvp;
+    uint32 IsRp;
+};*/
+
 #define MAX_OUTFIT_ITEMS 24
 
 struct CharStartOutfitEntry
@@ -1020,7 +1038,7 @@ struct ItemLimitCategoryEntry
     //char*     name[16]                                    // 1-16     m_name_lang
                                                             // 17 name flags
     uint32      maxCount;                                   // 18, max allowed equipped as item or in gem slot
-    //uint32      unk;                                      // 19, 1 for gems only...
+    uint32      mode;                                       // 19, 0 = have, 1 = equip (enum ItemLimitCategoryMode)
 };
 
 struct ItemRandomPropertiesEntry
@@ -1145,8 +1163,8 @@ struct MovieEntry
 struct PvPDifficultyEntry
 {
     //uint32      id;                                       // 0        m_ID
-    uint32      mapId;                                      // 1  
-    uint32      bracketId;                                  // 2 
+    uint32      mapId;                                      // 1
+    uint32      bracketId;                                  // 2
     uint32      minLevel;                                   // 3
     uint32      maxLevel;                                   // 4
     uint32      difficulty;                                 // 5
